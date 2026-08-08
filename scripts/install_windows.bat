@@ -55,17 +55,33 @@ echo   Installed to %HW_TARGET%
 
 echo.
 echo [2/4] Installing the MCP server (editable)...
+set "PY=python"
 where python >nul 2>nul
-if errorlevel 1 ( echo   Python not found on PATH. Install Python 3.12 and re-run. & exit /b 1 )
+if errorlevel 1 set "PY=py"
+where %PY% >nul 2>nul
+if errorlevel 1 (
+  echo   Python not found ^(tried "python" and the "py" launcher^).
+  echo   Install Python 3.12 from python.org, ticking "Add python.exe to PATH",
+  echo   then open a NEW terminal and re-run this script.
+  exit /b 1
+)
+echo   Using interpreter: %PY%
 pushd "%REPO_ROOT%"
-python -m pip install --upgrade pip >nul
-python -m pip install -e .
+%PY% -m pip install --upgrade pip >nul
+%PY% -m pip install -e .
 if errorlevel 1 ( echo   pip install failed. See output above. & popd & exit /b 1 )
 popd
+where fl-studio-mcp-daemon >nul 2>nul
+if errorlevel 1 (
+  echo   NOTE: "fl-studio-mcp-daemon" is not on PATH. Python's Scripts folder is:
+  %PY% -c "import sysconfig; print('     ' + sysconfig.get_path('scripts'))"
+  echo   Add that folder to PATH, or launch the daemon and the Claude Desktop
+  echo   "command" entry via its full path ^(fl-studio-mcp-daemon.exe / fl-studio-mcp.exe^).
+)
 
 echo.
 echo [3/4] Seeding the note-bridge pyscript (MCP_Apply)...
-python -c "import os, fl_studio_mcp.pyscript_gen as g; os.makedirs(g.PIANO_ROLL_SCRIPTS_DIR, exist_ok=True); print('   seeded ' + g.write_apply_script([], mode='append'))"
+%PY% -c "import os, fl_studio_mcp.pyscript_gen as g; os.makedirs(g.PIANO_ROLL_SCRIPTS_DIR, exist_ok=True); print('   seeded ' + g.write_apply_script([], mode='append'))"
 if errorlevel 1 echo   Note: could not pre-seed MCP_Apply (FL Piano roll scripts folder missing?). Non-fatal -- the daemon writes it on the first note-write.
 
 echo.
