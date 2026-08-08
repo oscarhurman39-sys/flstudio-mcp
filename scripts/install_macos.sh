@@ -4,19 +4,35 @@
 # ============================================================================
 set -euo pipefail
 
-FL_HARDWARE="$HOME/Documents/Image-Line/FL Studio/Settings/Hardware"
-TARGET="$FL_HARDWARE/FLStudioMCP"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-echo
-echo "[1/4] Installing FL Studio controller script..."
-if [[ ! -d "$FL_HARDWARE" ]]; then
-  echo "  FL Studio Hardware folder not found at:"
-  echo "    $FL_HARDWARE"
-  echo "  Open FL Studio at least once, then re-run this script."
+# FL's user data folder (Image-Line) is relocatable (FL: Options > File
+# settings > "User data folder"). Pass it as $1 or set FLSTUDIO_MCP_USER_DATA
+# if it isn't in one of the usual spots.
+IMAGE_LINE="${1:-${FLSTUDIO_MCP_USER_DATA:-}}"
+if [[ -z "$IMAGE_LINE" ]]; then
+  for c in "$HOME/Documents/Image-Line" "$HOME/Image-Line"; do
+    if [[ -d "$c/FL Studio/Settings/Hardware" ]]; then IMAGE_LINE="$c"; break; fi
+  done
+fi
+if [[ -z "$IMAGE_LINE" || ! -d "$IMAGE_LINE/FL Studio/Settings/Hardware" ]]; then
+  echo "  Could not find FL Studio's user data folder (Image-Line)."
+  echo "  If FL Studio has never been opened on this machine, open it once and re-run."
+  echo "  Otherwise find it in FL Studio (Options > File settings > 'User data"
+  echo "  folder') and re-run with it as an argument:"
+  echo "    ./scripts/install_macos.sh \"/path/to/Image-Line\""
   exit 1
 fi
+export FLSTUDIO_MCP_USER_DATA="$IMAGE_LINE"
+FL_HARDWARE="$IMAGE_LINE/FL Studio/Settings/Hardware"
+TARGET="$FL_HARDWARE/FLStudioMCP"
+
+echo
+echo "  FL user data folder: $IMAGE_LINE"
+
+echo
+echo "[1/4] Installing FL Studio controller script..."
 mkdir -p "$TARGET"
 cp "$REPO_ROOT/fl_controller/FLStudioMCP/device_FLStudioMCP.py" "$TARGET/"
 echo "  Installed to $TARGET"

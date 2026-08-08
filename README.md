@@ -127,7 +127,15 @@ Linux is not yet supported — contributions welcome.
 
    This copies the controller script, seeds the note-bridge pyscript
    (`MCP_Apply`), installs the server, and checks that your virtual MIDI ports
-   exist. For audio features, add the optional extras:
+   exist.
+
+   The installer finds FL's user data folder automatically — standard
+   `Documents`, OneDrive-redirected `Documents`, or `<drive>:\Image-Line`. If
+   yours lives somewhere else (FL shows it under **Options > File settings >
+   User data folder**), pass it as an argument:
+   ```bat
+   scripts\install_windows.bat "D:\Image-Line"
+   ``` For audio features, add the optional extras:
    ```
    pip install -e ".[audio]"
    pip install -e ".[audio,audio-accurate]"
@@ -178,6 +186,7 @@ Verify the connection by asking Claude to call `fl_ping`.
 | No `[FLStudioMCP] Ready` in FL's Script output | The controller isn't registered: set the `FLStudioMCP RX` input's **Controller type** to **FLStudioMCP** in MIDI Settings, confirm `device_FLStudioMCP.py` is in `Settings\Hardware\FLStudioMCP\`, then fully restart FL Studio. |
 | Claude can't reach FL / `fl_ping` fails | Make sure the daemon is running (`fl-studio-mcp-daemon`); check the transport matches (`FLSTUDIO_MCP_TRANSPORT=tcp` uses the daemon, unset uses direct MIDI); restart Claude Desktop after editing its config. |
 | Note-writing does nothing | Run `MCP_Apply` once from the piano roll's scripting menu this session — it arms the note bridge. |
+| Installer can't find FL's folder / `FLStudioMCP` missing from the Controller type dropdown / plugin & preset tools find nothing | FL's user data folder has been moved (check **Options > File settings > User data folder**). Installer and server auto-detect `Documents`, OneDrive's `Documents`, and `<drive>:\Image-Line`; for any other location run `scripts\install_windows.bat "X:\path\to\Image-Line"` or set `FLSTUDIO_MCP_USER_DATA` to the Image-Line folder. |
 | macOS note-trigger fails | Grant Accessibility permission to the app running the MCP server or daemon, then click the FL Piano roll and try `Cmd+Opt+Y`. |
 | Audio tools error or are unavailable | Install the optional extras: `pip install -e ".[audio]"` (or `".[audio,audio-accurate]"`). |
 

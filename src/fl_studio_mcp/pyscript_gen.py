@@ -16,9 +16,9 @@ from __future__ import annotations
 
 import os
 
-PIANO_ROLL_SCRIPTS_DIR = os.path.expanduser(
-    "~/Documents/Image-Line/FL Studio/Settings/Piano roll scripts"
-)
+from .fl_paths import piano_roll_scripts_dir
+
+PIANO_ROLL_SCRIPTS_DIR = piano_roll_scripts_dir()
 APPLY_SCRIPT_NAME = "MCP_Apply.pyscript"
 
 _DEFAULT_VELOCITY = 100 / 127.0
@@ -89,6 +89,7 @@ def write_apply_script(notes, mode="replace", scripts_dir=None):
     """
     scripts_dir = scripts_dir or PIANO_ROLL_SCRIPTS_DIR
     text = render_apply_script(notes, mode)
+    os.makedirs(scripts_dir, exist_ok=True)
     path = os.path.join(scripts_dir, APPLY_SCRIPT_NAME)
     with open(path, "w", encoding="ascii") as f:
         f.write(text)
@@ -177,6 +178,7 @@ def write_quantize_script(grid_bars, snap_ends=False, scripts_dir=None):
     """Write the quantize-existing-notes script to MCP_Apply.pyscript. Returns path."""
     scripts_dir = scripts_dir or PIANO_ROLL_SCRIPTS_DIR
     text = render_quantize_script(grid_bars, snap_ends)
+    os.makedirs(scripts_dir, exist_ok=True)
     path = os.path.join(scripts_dir, APPLY_SCRIPT_NAME)
     with open(path, "w", encoding="ascii") as f:
         f.write(text)

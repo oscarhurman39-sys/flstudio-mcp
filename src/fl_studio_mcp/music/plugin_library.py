@@ -1,7 +1,7 @@
 """Read FL's installed-plugin DATABASE from disk -- bypasses the API wall.
 
 FL writes a .fst shortcut for every scanned plugin under
-  <Documents>/Image-Line/FL Studio*/Presets/Plugin database/Installed/
+  <FL user data folder>/FL Studio*/Presets/Plugin database/Installed/
     Effects/<format>/*.fst      (FX)
     Generators/<format>/*.fst   (instruments)
 The .fst BASENAME is the plugin name FL uses. We only read the directory listing
@@ -11,7 +11,8 @@ these via the API; this is for library-aware SUGGESTIONS.)
 from __future__ import annotations
 
 import os
-from pathlib import Path
+
+from ..fl_paths import fl_studio_dirs
 
 _ENV = "FLSTUDIO_MCP_PLUGIN_DB"     # override: full path to the 'Installed' folder
 
@@ -36,18 +37,14 @@ _ROLE_KW = {
 
 def find_plugin_db():
     """Locate FL's 'Installed' plugin-db folder: env override, else discover under
-    the user's Documents (handles versioned 'FL Studio NN' folders)."""
+    the detected FL user data folder (handles versioned 'FL Studio NN' folders)."""
     env = os.environ.get(_ENV)
     if env and os.path.isdir(env):
         return env
-    home = Path.home()
-    for r in (home / "Documents" / "Image-Line", home / "Image-Line"):
-        if not r.is_dir():
-            continue
-        for fl in sorted(r.glob("FL Studio*"), reverse=True):
-            p = fl / "Presets" / "Plugin database" / "Installed"
-            if p.is_dir():
-                return str(p)
+    for fl in fl_studio_dirs():
+        p = fl / "Presets" / "Plugin database" / "Installed"
+        if p.is_dir():
+            return str(p)
     return None
 
 

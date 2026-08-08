@@ -6,25 +6,48 @@ REM    [2] MCP server          -> pip install -e .
 REM    [3] note-bridge script  -> seeds MCP_Apply.pyscript in Piano roll scripts\
 REM    [4] loopMIDI port check
 REM
-REM  Assumes the standard FL 2025 user-data location:
-REM    %USERPROFILE%\Documents\Image-Line\FL Studio\Settings
-REM  If your FL data folder is elsewhere, edit FL_SETTINGS below.
+REM  Finds FL's user data folder (Image-Line) automatically: standard Documents,
+REM  OneDrive-redirected Documents, or <drive>:\Image-Line. If yours is somewhere
+REM  else, pass it as the first argument or set FLSTUDIO_MCP_USER_DATA:
+REM    scripts\install_windows.bat "D:\Image-Line"
+REM  (FL shows the folder under Options > File settings > User data folder.)
 REM ============================================================================
 setlocal enabledelayedexpansion
 
-set "FL_SETTINGS=%USERPROFILE%\Documents\Image-Line\FL Studio\Settings"
-set "HW_TARGET=%FL_SETTINGS%\Hardware\FLStudioMCP"
 set "SCRIPT_DIR=%~dp0"
 set "REPO_ROOT=%SCRIPT_DIR%.."
 
-echo.
-echo [1/4] Installing FL Studio controller script...
-if not exist "%FL_SETTINGS%\Hardware" (
-  echo   FL Studio Settings\Hardware folder not found at:
-  echo     %FL_SETTINGS%\Hardware
-  echo   Open FL Studio at least once, then re-run this script.
+set "FL_SETTINGS="
+if not "%~1"=="" (
+  if exist "%~1\FL Studio\Settings\Hardware" (
+    set "FL_SETTINGS=%~1\FL Studio\Settings"
+  ) else (
+    echo   "%~1" does not look like an Image-Line folder: no FL Studio\Settings\Hardware inside.
+    exit /b 1
+  )
+)
+if not defined FL_SETTINGS if defined FLSTUDIO_MCP_USER_DATA if exist "%FLSTUDIO_MCP_USER_DATA%\FL Studio\Settings\Hardware" set "FL_SETTINGS=%FLSTUDIO_MCP_USER_DATA%\FL Studio\Settings"
+if not defined FL_SETTINGS if exist "%USERPROFILE%\Documents\Image-Line\FL Studio\Settings\Hardware" set "FL_SETTINGS=%USERPROFILE%\Documents\Image-Line\FL Studio\Settings"
+if not defined FL_SETTINGS if exist "%USERPROFILE%\OneDrive\Documents\Image-Line\FL Studio\Settings\Hardware" set "FL_SETTINGS=%USERPROFILE%\OneDrive\Documents\Image-Line\FL Studio\Settings"
+if not defined FL_SETTINGS for %%D in (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z) do if not defined FL_SETTINGS if exist "%%D:\Image-Line\FL Studio\Settings\Hardware" set "FL_SETTINGS=%%D:\Image-Line\FL Studio\Settings"
+
+if not defined FL_SETTINGS (
+  echo   Could not find FL Studio's user data folder ^(Image-Line^).
+  echo   If FL Studio has never been opened on this machine, open it once and re-run.
+  echo   Otherwise find the folder in FL Studio under Options ^> File settings ^>
+  echo   "User data folder", then re-run with it as an argument, e.g.:
+  echo     scripts\install_windows.bat "D:\Image-Line"
   exit /b 1
 )
+for %%I in ("%FL_SETTINGS%\..\..") do set "IMAGE_LINE=%%~fI"
+set "FLSTUDIO_MCP_USER_DATA=%IMAGE_LINE%"
+set "HW_TARGET=%FL_SETTINGS%\Hardware\FLStudioMCP"
+
+echo.
+echo   FL user data folder: %IMAGE_LINE%
+
+echo.
+echo [1/4] Installing FL Studio controller script...
 if not exist "%HW_TARGET%" mkdir "%HW_TARGET%"
 copy /Y "%REPO_ROOT%\fl_controller\FLStudioMCP\device_FLStudioMCP.py" "%HW_TARGET%\" >nul
 if errorlevel 1 ( echo   Copy failed. Aborting. & exit /b 1 )
@@ -69,5 +92,9 @@ echo        once (this arms note-writing). Then ask Claude to call fl_ping.
 echo.
 echo  Optional audio features:   pip install -e ".[audio]"      (tempo/key + melody)
 echo                             pip install -e ".[audio,audio-accurate]"  (+ CREPE)
+echo.
+echo  Detected FL user data folder: %IMAGE_LINE%
+echo  The daemon/server auto-detect it the same way; if you ever move it or have
+echo  more than one, set FLSTUDIO_MCP_USER_DATA to the Image-Line folder to pin it.
 echo.
 endlocal
