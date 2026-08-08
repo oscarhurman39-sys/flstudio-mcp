@@ -86,7 +86,7 @@ if errorlevel 1 echo   Note: could not pre-seed MCP_Apply (FL Piano roll scripts
 
 echo.
 echo [4/4] Checking loopMIDI ports...
-%PY% -c "import mido; names=set(mido.get_output_names())|set(mido.get_input_names()); req=('FLStudioMCP RX','FLStudioMCP TX'); missing=[n for n in req if not any(n.lower() in x.lower() for x in names)]; print('   All required ports present.') if not missing else print('   MISSING ports: %s -- create them in loopMIDI.' % missing)"
+%PY% -c "import mido; names=set(mido.get_output_names())|set(mido.get_input_names()); req=('FLStudioMCP RX','FLStudioMCP TX'); missing=[n for n in req if not any(n.lower() in x.lower() for x in names)]; print('   All required ports present.') if not missing else print('   MISSING ports: ' + ', '.join(missing) + ' -- create them in loopMIDI.')"
 
 echo.
 echo ============================================================================
