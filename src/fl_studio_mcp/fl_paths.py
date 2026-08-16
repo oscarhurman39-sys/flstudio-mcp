@@ -9,13 +9,18 @@ relocated install is found once, consistently, by all features.
 Resolution order:
   1. FLSTUDIO_MCP_USER_DATA -- the Image-Line folder itself (an
      "FL Studio*" folder directly beneath one is also accepted).
-  2. <home>/Documents/Image-Line, <home>/OneDrive/Documents/Image-Line,
+  2. Windows: FL's own "Shared data" path from the registry. FL writes
+     this itself, so it is authoritative -- and it is the only source
+     that stays right when the user data folder has been relocated.
+  3. <home>/Documents/Image-Line, <home>/OneDrive/Documents/Image-Line,
      <home>/Image-Line.
-  3. Windows: <drive>:/Image-Line for each drive letter.
+  4. Windows: <drive>:/Image-Line for each drive letter.
 
-A candidate only counts if some "FL Studio*" folder beneath it contains
-Settings or Presets -- this skips stale or unrelated folders (e.g. one
-left behind by FL Studio Mobile).
+A candidate only counts if some "FL Studio*" folder beneath it contains a
+NON-EMPTY Settings or Presets folder. The emptiness check matters: writing
+a file under ~/Documents/Image-Line (the last-resort fallback below) would
+otherwise create a folder that then wins resolution over the real one on
+every later call -- a decoy of our own making.
 """
 
 from __future__ import annotations
@@ -29,7 +34,32 @@ ENV_USER_DATA = "FLSTUDIO_MCP_USER_DATA"
 
 
 def _is_fl_dir(fl: Path) -> bool:
-    return (fl / "Settings").is_dir() or (fl / "Presets").is_dir()
+    for sub in ("Settings", "Presets"):
+        d = fl / sub
+        try:
+            if d.is_dir() and any(d.iterdir()):
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def _registry_user_data() -> Path | None:
+    """FL's own "Shared data" path (Windows only); None if unset/unusable."""
+    if sys.platform != "win32":
+        return None
+    try:
+        import winreg
+
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                            r"Software\Image-Line\Shared\Paths") as key:
+            raw, _ = winreg.QueryValueEx(key, "Shared data")
+    except (OSError, ImportError, ValueError):
+        return None
+    if not raw:
+        return None
+    p = Path(str(raw).strip().rstrip("\\/"))
+    return p if _has_fl_studio(p) else None
 
 
 def _has_fl_studio(root: Path) -> bool:
@@ -48,6 +78,9 @@ def find_image_line_dir() -> Path | None:
             return p
         if p.name.startswith("FL Studio") and _is_fl_dir(p):
             return p.parent
+    reg = _registry_user_data()
+    if reg is not None:
+        return reg
     home = Path.home()
     candidates = [
         home / "Documents" / "Image-Line",
